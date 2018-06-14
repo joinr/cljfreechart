@@ -4,10 +4,7 @@
 ;;we run into this ALOT.
 ;;The chart type is typically embedded in the plot/dataset,
 ;;EXCEPT when it's not
-(defn get-datasets
-  [plot]
-  (let [n (.getDatasetCount plot)]
-    (mapv #(get-dataset plot 
+
 
 ;;we need to regine this to allow more datasets 
 (defmulti add-lines* (fn [chart x y & options] (type (get-dataset chart))))
