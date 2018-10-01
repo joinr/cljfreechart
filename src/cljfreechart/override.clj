@@ -1,7 +1,8 @@
 (ns cljfreechart.override
   (:require [incanter core charts]
             [proc stacked])
-  (:import [org.jfree.chart.annotations CategoryAnnotation CategoryLineAnnotation TextAnnotation]
+  (:import [org.jfree.chart.annotations CategoryAnnotation
+            CategoryLineAnnotation TextAnnotation]
            [org.jfree.chart.plot Plot]
            [org.jfree.chart.axis CategoryAnchor]
            [org.jfree.data.xy DefaultTableXYDataset XYSeries]

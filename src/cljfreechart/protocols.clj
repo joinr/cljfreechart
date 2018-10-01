@@ -43,7 +43,7 @@
 
 (defprotocol ISeriesLookup
   (series-in [x d k]))
-  
+
 ;;For utility....
 ;;it might be nice to extend a lookup representation
 ;;to charts.
@@ -82,7 +82,7 @@
 (defprotocol IXYData  ;;this should really be XYDataTable
   (^DefaultTableXYDataset as-tablexy [obj])
   (^XYSeries series                  [obj nm])
-  (series-seq                        [obj]) 
+  (series-seq                        [obj])
   (get-bounds                        [obj]))
 
 (defprotocol IOrderedSeries
@@ -91,7 +91,7 @@
 (defprotocol IColorable
   (set-colors [obj colors]))
 
-(defprotocol IReactiveData  
+(defprotocol IReactiveData
   (set-notify [obj v])
   (add-samples [plt samples]))
 
@@ -105,7 +105,7 @@
 
 (defn jfree-datasets
   [plot]
-  (into {} 
+  (into {}
         (for [n (range (.getDatasetCount plot))]
           [n (get-dataset plot n)])))
 
@@ -142,11 +142,11 @@
           (when (has-series? ds)
             (for [[j xyseries] (map-indexed vector (.getSeries ds))]
               {:dataset     i
-               :series      j                 
+               :series      j
                :data        xyseries
                :key         (.getKey xyseries)
                :renderer    (.getRenderer p i)
-               :legend-item (.getLegendItem (.getRenderer p i) 0 j)               
+               :legend-item (.getLegendItem (.getRenderer p i) 0 j)
                })))
         flatten
         (filter identity)))
@@ -186,8 +186,12 @@
                (assoc acc v k)) {} xs))
 
 (defn as-order-function [f]
-  (cond (vector? f) (let [m (vector-ordering f) bound (inc (count f))] (fn [kv] (get m (first kv) bound))) ;order is implied by position
-        (map?    f) (fn [kv] (f (first kv)))   ;order is implied by mapping of series->order
+  (cond (vector? f) (let [m (vector-ordering f)
+                          bound (inc (count f))]
+                      ;;order is implied by position
+                      (fn [kv] (get m (first kv) bound)))
+        ;;order is implied by mapping of series->order
+        (map?    f) (fn [kv] (f (first kv)))
         (fn?     f) f
         :else (throw (Exception. (str "unknown ordering function " f)))))
 
@@ -208,12 +212,14 @@
 
 ;;this may be a bit much....
 (extend-type org.jfree.chart.JFreeChart  ;extend-protocol opposite. or extend-type
-  IColorable 
+  IColorable
   (set-colors [obj colors]
-    (let [^org.jfree.chart.plot.XYPlot plot (.getXYPlot ^org.jfree.chart.JFreeChart obj)]      
+    (let [^org.jfree.chart.plot.XYPlot plot
+           (.getXYPlot ^org.jfree.chart.JFreeChart obj)]
       (doseq [n  (range (.getDatasetCount plot))]
         (let [ds (.getDataset plot (int n))
-              ^org.jfree.chart.renderer.xy.XYItemRenderer xyr (.getRendererForDataset plot ds)]
+              ^org.jfree.chart.renderer.xy.XYItemRenderer xyr
+              (.getRendererForDataset plot ds)]
           (doseq  [ [idx [nm ^XYSeries ser]] (map-indexed vector (series-seq ds))]
             (when-let [c (get colors nm)]
               (.setSeriesPaint xyr  (int idx) (get-color! c))))))))
@@ -227,7 +233,7 @@
 (defn xycoords [^XYSeries ser]
   (map (fn [^XYDataItem xy]
          [(.getX xy) (.getY xy)])
-       (.getItems ser)))  
+       (.getItems ser)))
 
 
 ;;TODO: Generalize!
@@ -236,7 +242,8 @@
 ;;Also only works with "Current Dataset"
 ;;JFreeChart allows defining multiple axes in a plot.
 (defn set-domain! [^org.jfree.chart.JFreeChart obj min max]
-  (let [^org.jfree.chart.plot.XYPlot plot (.getXYPlot ^org.jfree.chart.JFreeChart obj) ;xyplot is main plot obj
+  (let [^org.jfree.chart.plot.XYPlot plot
+           (.getXYPlot ^org.jfree.chart.JFreeChart obj) ;xyplot is main plot obj
         ax (.getDomainAxis plot)]
     (do (.setRange ax min max)))) ;return obj at the end. same with range
 
@@ -244,15 +251,17 @@
 ;;Also only works with "Current Dataset"
 ;;JFreeChart allows defining multiple axes in a plot.
 (defn set-range! [^org.jfree.chart.JFreeChart obj min max]
-  (let [^org.jfree.chart.plot.XYPlot plot (.getXYPlot ^org.jfree.chart.JFreeChart obj)
+  (let [^org.jfree.chart.plot.XYPlot plot
+           (.getXYPlot ^org.jfree.chart.JFreeChart obj)
         ax (.getRangeAxis plot)]
     (do (.setRange ax min max))))
 
 ;;does this only work with XYPlots?
 ;;Also only works with "Current Dataset"
 ;;JFreeChart allows defining multiple axes in a plot.
-(defn copy-axes! [^org.jfree.chart.JFreeChart l ^org.jfree.chart.JFreeChart r]
-  (let [rx (.getDomainAxis (.getXYPlot r)) 
+(defn copy-axes! [^org.jfree.chart.JFreeChart l
+                  ^org.jfree.chart.JFreeChart r]
+  (let [rx (.getDomainAxis (.getXYPlot r))
         ry (.getRangeAxis  (.getXYPlot r))]
     (do (.setRange rx (.getRange (.getDomainAxis (.getXYPlot l))))
         (.setRange ry (.getRange (.getRangeAxis  (.getXYPlot l)))))))
