@@ -1,10 +1,13 @@
+;;Defines various types of plots that
+;;operate on or parameterize a categorical
+;;dataset.
 (ns cljfreechart.charts.categories)
 
 (defn add-categories*
   ([chart categories values & options]
     (let [opts (when options (apply assoc {} options))
           data (or (:data opts) $data)
-          _values (data-as-list values data)
+          _values     (data-as-list values data)
           _categories (data-as-list categories data)
           _group-by (when (:group-by opts)
                       (data-as-list (:group-by opts) data))
@@ -77,7 +80,8 @@
                              (format "%s, %s (0)" '~categories '~values)
                              (format "%s, %s" '~categories '~values)))
            args# (concat [~chart ~categories ~values]
-                         (apply concat (seq (apply assoc opts# [:series-label series-lab#]))))]
+                         (apply concat (seq (apply assoc opts#
+                                                   [:series-label series-lab#]))))]
        (apply add-categories* args#))))
 
 
@@ -218,7 +222,32 @@
                                                             :series-label series-lab#]))))]
         (apply line-chart* args#))))
 
+;;we're assuming - VERY SIMPLY - that values, categories, and group-by are
+;;sequences of identical length.  Basically, pre-cooked...
+(defn ^DefaultCategoryDataset ->category-dataset
+  "Projects two sequences of identical length - values and categories,
+   onto a category dataset.  An optional vector of groupings, as if by
+   group-by - groups - may be supplied to infer different series labels.
+   Defaults to a single series/group called 'values"
+  [values categories & {:keys [groups series-label]
+                          :or {series-label (str 'values)}}]
+  (let [dataset (DefaultCategoryDataset.)
+        values      (vec values)
+        categories  (vec categories)
+        groups (and (seq goups) (vec groups))]
+    (doseq [i (range 0 (count values))]
+      (.addValue dataset
+                 (nth values i) ;;x value
+                 ;;series
+                 (if groups
+                     (nth groups i)
+                     series-label)
+                 ;;category
+                 (nth categories i)))))
 
+;;rather than handling the values coercion as implicit queries, with "maybe"
+;;a dataset, why not simplify the ctor and assume categories and values exist.
+;;We can handle the data-as-list coercion outside?
 (defn bar-chart*
   ([categories values & options]
     (let [opts (when options (apply assoc {} options))
