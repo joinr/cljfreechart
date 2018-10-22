@@ -7,4 +7,5 @@
                  [org.clojure/test.check "0.9.0"]
                  [org.jfree/jfreechart "1.5.0"]
                  [metosin/spec-tools "0.7.0"]
+                 [joinr/incanter "1.9.3-SNAPSHOT" :exclude [org.jfree/jfreechart]]
                  ])
