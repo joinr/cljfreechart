@@ -2,7 +2,9 @@
 ;;charts.  Provides convenience methods
 ;;and/or internal implementations for
 ;;specific data types.
-(ns cljfreechart.protocols)
+(ns cljfreechart.protocols
+  (:require [cljcolor.core :as color]))
+
 
 (defprotocol IChartable
   (as-chart [obj opts]))
@@ -41,6 +43,39 @@
   (get-dataset [x k])
   (datasets    [x]))
 
+;;We can probably extend the notion of
+;;map-access to abstract over charts...
+;;Then we can define operations on maps of
+;;charts....instead of dinking with the
+;;object API.  For reads, this should improve
+;;queries significantly.
+
+;;Another option, provide a map-like
+;;wrapper around the various plot types.
+{plot
+ :data {dataset
+         {series
+           {:keys [series-label renderer label type data]}}}
+ :domain-axis {0 ...}
+ :range-axis  {0 ...}
+
+ }
+
+set-axis! -> (assoc! plot :range-axis )
+
+;;what if we want to update children destructively?
+;;define mutable operations separately?
+;;fluent, nested-map facade
+
+;;define mutable ops on top?
+;;maybe a plotproxy?
+;;maintain map of data for datasets/series
+;;axes are mapped to renderers.
+
+;;plot-> datasets -> series -> items
+;;plot -> renderers -> items?
+
+;;we already have get-series 
 (defprotocol ISeriesLookup
   (series-in [x d k]))
 
@@ -65,15 +100,24 @@
 (defprotocol ILineSurface
   (add-lines [chart x y & options]))
 
-(defprotocol IChart
+;;These are all the (former) multimethods we
+;;had.  Used for styling...
+
+;;Possibly break up into more protocols?
+(defprotocol IChartStyle
   (set-point-size   [chart size opts]
     "Set the point size of a scatter plot. Use series option to apply
      point-size to only one series.")
   (set-stroke-color [chart color opts])
   (set-stroke       [chart color opts])
-  (set-theme        [chart theme opts])
+  (set-theme        [chart theme opts]))
+
+(defprotocol IChartIO
   (view-chart       [chart opts])
   (save-chart       [chart filename opts]))
+
+
+;;Not a good protocol.
 
 ;;we probably want to specify coercions too...
 ;;Also, avoid having duplicate data, we could
