@@ -53,13 +53,17 @@
 ;;Another option, provide a map-like
 ;;wrapper around the various plot types.
 {plot
- :data {dataset
-         {series
-           {:keys [series-label renderer label type data]}}}
- :domain-axis {0 ...}
- :range-axis  {0 ...}
-
+ :data  {dataset
+          {series
+            {:keys [series-label renderer label type data]}}}
+ :axes   {0 ...} ;;infer domain and range....
+ :labels {:x
+          :y} ;;
+ :titles ;;
  }
+
+;;dataset->view
+
 
 set-axis! -> (assoc! plot :range-axis )
 

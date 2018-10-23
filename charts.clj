@@ -235,7 +235,7 @@
     theme -- either a keyword indicating one of the built-in themes,
              or a JFreeChart ChartTheme object, or a function that
              applies thematic changes to the JFreeChart.
-  
+
   Built-in Themes:
     :default
     :dark
