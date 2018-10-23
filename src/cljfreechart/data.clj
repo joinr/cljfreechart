@@ -36,6 +36,45 @@
              SlidingCategoryDataset]
             [java.awt Color]))
 
+
+;;datasets are composed of series.
+;;series come in some flavors:
+
+;;two most common types of datasets:
+;;xyseriescollection
+;;  getSeriesCount and friends, composed of
+;;  multiple XYSeries...
+
+;;defaultcategorydataset
+;;acts like a table structure.
+;;Has Rows and Columns
+
+;;for categorical data, we get this...
+
+;;series keys, probably better abstraction
+(defn row-keys [^CategoryDataset cd] (.getRowKeys cd))
+;; domain keys (categories) ~x axis
+(defn col-keys [^CategoryDataset cd] (.getColumnKeys cd))
+
+(defn get-value   [^CategoryDataset cd s x]
+  (if (number? s)
+    (.getValue cd (int s) (int x))
+    (.getValue cd ^Comparable s ^Comparable x)))
+
+(defn category-values [^CategoryDataset cd]
+  (for [series (row-keys cd)
+        col    (col-keys cd)]
+    {:series   series
+     :category col
+     :value    (get-value cd series col)}))
+
+(defn series-keys [xys ]
+  )
+
+;;for xyseries, we get something similar...
+
+;;values
+
 ;;we'd like to define coercions.
 
 ;;For a lot of these, it looks like we can simply coerce
