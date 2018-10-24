@@ -12,7 +12,7 @@
              XYSeries
              XYSeriesCollection
              XYDataItem]
-            [org.jfree.data.gannt
+            [org.jfree.data.gantt
              XYTaskDataset
              SlidingGanttCategoryDataset
              TaskSeriesCollection
@@ -30,6 +30,7 @@
              WaferMapDataset]
             ;;category datasets...
             [org.jfree.data.category
+             CategoryDataset
              CategoryToPieDataset
              DefaultCategoryDataset
              DefaultIntervalCategoryDataset
@@ -61,6 +62,14 @@
     (.getValue cd (int s) (int x))
     (.getValue cd ^Comparable s ^Comparable x)))
 
+;;need to add hints, but we overload this...
+;;There's also the variant where we add multiple values.
+(defn add-value [^DefaultCategoryDataset cd
+                 ^Comparable series
+                 ^Comparable category
+                 ^Number v]
+  (doto cd (.addValue v series category)))
+
 (defn category-values [^CategoryDataset cd]
   (for [series (row-keys cd)
         col    (col-keys cd)]
@@ -68,7 +77,54 @@
      :category col
      :value    (get-value cd series col)}))
 
-(defn series-keys [xys ]
+(defn values->categorydataset [vs]
+  (reduce (fn [^DefaultCategoryDataset acc {:keys [series category value]
+                                            :or   {series "blank"}}]
+            (add-value acc series category value))
+          (DefaultCategoryDataset.) vs))
+
+(defn series-key [^Series s] (.getSeriesKey s))
+
+;;xy-series
+(defn xy-series [^XYSeriesCollection xys]
+  (let [cnt (.getSeriesCount xys)]
+    (for [i (range cnt)]
+      [(.getSeriesKey xys (int i))
+       (.getSeries xys (int i))])))
+
+(defn xy-values [^XYSeriesCollection xys]
+  (for [[k series] (xy-series xys)
+        item      (.getItems series)]
+    {:series k  :x (.getX item) :y (.getY item)}))
+
+;;possibly need to autosort
+(defn values->xydataset [vs]
+  (let [series (atom {})
+        get-series! (fn [^Comparable k]
+                      (or (@series k)
+                          (let [s (XYSeries. k)
+                                _ (swap! series assoc k s)]
+                            s)))]
+    (doseq [{:keys [series x y]
+             :or {series "blank"}} vs]
+      (doto ^XYSeries (get-series! series)
+        (.add (double x) (double y))))
+    (reduce (fn [^XYSeriesCollection acc ^XYSeries s]
+              (doto acc (.addSeries s)))
+            (XYSeriesCollection.)
+            (vals @series))))
+
+
+(comment
+  (use '[incanter datasets charts core])
+  (def catplt (->> (get-dataset :airline-passengers)
+                   (area-chart :year :passengers :group-by :month :legend true
+                               :data)))
+
+  (def xyplt   (with-data (get-dataset :iris)
+                 (scatter-plot :Sepal.Length :Sepal.Width :group-by :Species)))
+
+
   )
 
 ;;for xyseries, we get something similar...

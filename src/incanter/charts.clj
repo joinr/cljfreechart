@@ -1,3 +1,5 @@
+;;This is a temporary port that enables jfreechart 1.5 to work.
+
 ;;; charts.clj -- Charts library for Clojure built on JFreeChart
 
 ;; by David Edgar Liebke http://incanter.org
