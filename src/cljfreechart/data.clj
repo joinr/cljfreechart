@@ -35,8 +35,8 @@
              DefaultCategoryDataset
              DefaultIntervalCategoryDataset
              SlidingCategoryDataset]
+            [org.jfree.chart.plot Plot]
             [java.awt Color]))
-
 
 ;;datasets are composed of series.
 ;;series come in some flavors:
@@ -114,6 +114,64 @@
             (XYSeriesCollection.)
             (vals @series))))
 
+;;return a sequence of the dataset and associated
+;;information, position, renderer
+(defn datasets [^org.jfree.chart.plot.Plot plt]
+  (let [n (.getDatasetCount plt)]
+    (for [i (range n)]
+      {:dataset-idx i
+       :data (.getDataset plt i)
+       :renderer (.getRenderer plt i)})))
+
+(defprotocol IPlotContainer
+  (as-plot [obj]))
+
+(extend-protocol IPlotContainer
+  org.jfree.chart.plot.Plot
+  (as-plot [obj] obj)
+  org.jfree.chart.JFreeChart
+  (as-plot [obj] (.getPlot obj)))
+
+(defprotocol IDataValues
+  (-records [obj]))
+
+(extend-protocol IDataValues
+  XYSeriesCollection
+  (-records [obj] (xy-values obj))
+  CategoryDataset
+  (-records [obj] (category-values obj))
+  org.jfree.chart.plot.Plot
+  (-records [obj]
+    (->> (datasets obj)
+         (mapcat (fn [{:keys [dataset-idx data]}]
+                   (map (fn [r]
+                          (assoc r :dataset-idx dataset-idx))
+                        (-records data)))))))
+
+(defn records
+  "Gives us a seq-of-maps view over a dataset.  Intended for
+   wrapping jfreechart dataset providers."
+  [obj]
+  (if (extends? IDataValues (type obj))
+    (-records obj)
+    (-records (as-plot obj))))
+
+;;this is looking similar to vega/gg
+;;we don't have aesthetics like size...
+
+;;plot has a bunch of graphics and customization options.
+;;maybe we don't care about that, and keep the aesthetics
+;;separate?
+(defn plot-info [x]
+  (let [^Plot plot (as-plot x)]
+    {:plot            plot
+     :data            (datasets plot)
+     :rendering-order (.getDatasetRenderingOrder plot)}))
+
+;;now we can easily read datasets, even after
+;;getting them into charts.
+
+;;what about altering them?
 
 (comment
   (use '[incanter datasets charts core])
@@ -143,6 +201,7 @@
 ;;the charts listen to dataset change events, and update
 ;;in reponse.
 
+(comment 
 ;;we can abstract this further....if we wrap the dataset.
 (defn ^CategoryDataset add-categories!
   "Projects two sequences of identical length - values and categories,
@@ -178,5 +237,5 @@
   (add-categories! (DefaultCategoryDataset.) values categories
                    :groups groups :series-label series-label))
 
-
+)
 
