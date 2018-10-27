@@ -57,18 +57,39 @@
 ;; domain keys (categories) ~x axis
 (defn col-keys [^CategoryDataset cd] (.getColumnKeys cd))
 
-(defn get-value   [^CategoryDataset cd s x]
-  (if (number? s)
-    (.getValue cd (int s) (int x))
-    (.getValue cd ^Comparable s ^Comparable x)))
+;;the problem we have is that DefaultCategoryDataset
+;;doesn't maintain series objects.
 
-;;need to add hints, but we overload this...
-;;There's also the variant where we add multiple values.
-(defn add-value [^DefaultCategoryDataset cd
-                 ^Comparable series
-                 ^Comparable category
-                 ^Number v]
-  (doto cd (.addValue v series category)))
+(defprotocol ISeriesColl
+  (add-value
+    [obj series x y]
+    [obj record])
+  (get-value
+    [obj series x]
+    [obj record])
+  (series-keys [obj]))
+
+(extend-protocol ISeriesColl
+  DefaultCategoryDataset
+  (add-value
+    ([cd ^Comparable  series  ^Comparable category ^Number v]
+     (doto cd (.addValue v series category)))
+    ([cd record]
+     (let [{:keys [series category value]
+            :or   {series "blank"}} record]
+       (doto cd (.addValue ^Number value
+                           ^Comparable series ^Comparable category)))))
+  (get-value
+    ([cd series category]
+     (if (number? series)
+       (.getValue cd (int series) (int category))
+       (.getValue cd ^Comparable series ^Comparable category)))
+    ([cd record]
+     (let [{:keys [series category]} record]
+       (if (number? series)
+         (.getValue cd (int series) (int category))
+         (.getValue cd ^Comparable series ^Comparable category)))))
+  (series-keys [cd] (row-keys cd)))
 
 (defn category-values [^CategoryDataset cd]
   (for [series (row-keys cd)
@@ -78,12 +99,33 @@
      :value    (get-value cd series col)}))
 
 (defn values->categorydataset [vs]
-  (reduce (fn [^DefaultCategoryDataset acc {:keys [series category value]
-                                            :or   {series "blank"}}]
-            (add-value acc series category value))
-          (DefaultCategoryDataset.) vs))
+  (reduce add-value (DefaultCategoryDataset.) vs))
 
 (defn series-key [^Series s] (.getSeriesKey s))
+
+(defn get-series [])
+
+(extend-protocol ISeriesColl
+  XYSeriesCollection 
+  (add-value
+    ([cd ^Comparable  series  ^Comparable x ^Number v]
+     (doto cd (.addValue v series x)))
+    ([cd record]
+     (let [{:keys [series category value]
+            :or   {series "blank"}} record]
+       (doto cd (.addValue ^Number value
+                           ^Comparable series ^Comparable category)))))
+  (get-value
+    ([cd series category]
+     (if (number? series)
+       (.getValue cd (int series) (int category))
+       (.getValue cd ^Comparable series ^Comparable category)))
+    ([cd record]
+     (let [{:keys [series category]} record]
+       (if (number? series)
+         (.getValue cd (int series) (int category))
+         (.getValue cd ^Comparable series ^Comparable category)))))
+  (series-keys [cd] (row-keys cd)))
 
 ;;xy-series
 (defn xy-series [^XYSeriesCollection xys]
@@ -138,7 +180,7 @@
 (extend-protocol IDataValues
   XYSeriesCollection
   (-records [obj] (xy-values obj))
-  CategoryDataset
+  DefaultCategoryDataset
   (-records [obj] (category-values obj))
   org.jfree.chart.plot.Plot
   (-records [obj]
@@ -167,6 +209,7 @@
     {:plot            plot
      :data            (datasets plot)
      :rendering-order (.getDatasetRenderingOrder plot)}))
+
 
 ;;now we can easily read datasets, even after
 ;;getting them into charts.
