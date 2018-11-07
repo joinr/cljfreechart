@@ -210,11 +210,79 @@
      :data            (datasets plot)
      :rendering-order (.getDatasetRenderingOrder plot)}))
 
+(defn data-map
+  "Given a IPlotContainer x, returns a map of {dataset-idx data}
+   to provide quick access and querying for plots.
+   Map is currently unordered!"
+  [x]
+  (->> (for [{:keys [dataset-idx data renderer] :as r} (-> x plot-info :data)]
+         [dataset-idx (dissoc r :dataset-idx)])
+       (into {})))
+
+(defn data-records
+  "Given a IPlotContainer x, returns a map of {dataset-idx [r1 r2]}
+  to provide quick access and querying for plots.
+  Map is currently unordered!"
+  [x]
+  (into {}
+     (for [[idx {:keys [data]}] (data-map x)]
+       [idx (records data)])))
+
+;;ahh...
+;;should be able to construct plots from data-maps...
+;;make it easy to view as a core.matrix dataset?
+;;then we can leverage everything from incanter directly?
+(defn data-map->plot []
+  )
+
+
+
+;;From the clojure perspective,
+;;a simple bar-chart with one layer:
+;;1) a dataset, build from said url.
+
+;;2) transformed to include only records where year = 2000
+
+;;Rendering:
+;;3) the mark for the layer is bar...
+;;   Tell the implementation to use an appropriate renderer
+;;   for bars.
+
+;; visual channels
+;;  For the x-coordinates in this layer,
+;;    transform the data by grouping by people,
+;;    and summing, returning a quantitative field.
+;;    Create a custom axis (for x),
+;;        where the title is population.
+;;        otherwise we stick to defaults.
+
+(comment
+{"data" {"url" "data/population.json"},
+ "transform" [{"filter" "datum.year == 2000"}],
+ "mark" "bar",
+ "encoding" {"x" {"aggregate" "sum", "field" "people", "type" "quantitative",
+                  "axis" {"title" "population"}}}}
+)
+
+;;This provides a read-only representation.
+;;We should allow the API to provide updates
+;;or writes.  So mutable part of the API
+;;should handle adding series and the like...
+
+;;We'll create a generic styling API
+;;to inherit from, then allow implementation
+;;specific options.
+
 
 ;;now we can easily read datasets, even after
 ;;getting them into charts.
 
 ;;what about altering them?
+
+;;I think we want to specify constructors for
+;;plots...
+
+
 
 (comment
   (use '[incanter datasets charts core])
