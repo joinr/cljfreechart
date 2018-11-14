@@ -207,7 +207,7 @@
 (defn plot-info [x]
   (let [^Plot plot (as-plot x)]
     {:plot            plot
-     :data            (datasets plot)
+     :data            (vec (datasets plot))
      :rendering-order (.getDatasetRenderingOrder plot)}))
 
 (defn data-map
